@@ -1,0 +1,271 @@
+/* Dark, minimal theme */
+
+:root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1f262e;
+    --border: #30363d;
+    --fg: #c9d1d9;
+    --fg-muted: #8b949e;
+    --accent: #2f81f7;
+    --success: #3fb950;
+    --warn: #d29922;
+    --error: #f85149;
+    --progress: #2f81f7;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+}
+
+header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+header h1 {
+    font-size: 18px;
+    margin: 0;
+    color: var(--accent);
+}
+nav a {
+    color: var(--fg);
+    text-decoration: none;
+    margin-right: 4px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+nav a:hover { color: var(--accent); }
+nav a.active { background: var(--panel-2); color: var(--accent); }
+
+main {
+    max-width: 1080px;
+    margin: 24px auto;
+    padding: 0 24px;
+}
+
+.view[hidden] { display: none; }
+
+.card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.card h2 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: var(--fg);
+}
+
+.dropzone {
+    display: block;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 16px;
+}
+.dropzone.dragover { background: var(--panel-2); border-color: var(--accent); }
+
+.row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.row label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--fg-muted); }
+
+input[type="number"], input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    border-radius: 4px;
+    padding: 6px 8px;
+    width: 120px;
+}
+
+button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+}
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.secondary { background: var(--panel-2); border: 1px solid var(--border); color: var(--fg); }
+button:hover:not(:disabled) { filter: brightness(1.1); }
+
+.error {
+    color: var(--error);
+    background: rgba(248, 81, 73, 0.1);
+    border: 1px solid var(--error);
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    vertical-align: middle;
+}
+th { color: var(--fg-muted); font-weight: 500; }
+td.empty { color: var(--fg-muted); text-align: center; padding: 24px; }
+
+.thumb-cell { width: 64px; padding: 4px 8px; }
+.thumb {
+    width: 48px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: block;
+}
+.thumb-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg-muted);
+    font-size: 14px;
+}
+
+.badge.erp {
+    background: linear-gradient(135deg, #6e4ec6 0%, #4a8fd6 100%);
+    color: #fff;
+    margin-right: 4px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.params {
+    display: inline-flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 12px;
+}
+.params span {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-family: "SF Mono", Menlo, monospace;
+    color: var(--fg-muted);
+}
+
+.badge {
+    display: inline-block;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-family: monospace;
+}
+.badge.pending { background: rgba(139, 148, 158, 0.2); }
+.badge.ffmpeg { background: rgba(47, 129, 247, 0.2); border-color: var(--accent); }
+.badge.colmap { background: rgba(210, 153, 34, 0.2); border-color: var(--warn); }
+.badge.opensplat { background: rgba(63, 185, 80, 0.2); border-color: var(--success); }
+.badge.done { background: rgba(63, 185, 80, 0.3); border-color: var(--success); }
+.badge.failed { background: rgba(248, 81, 73, 0.3); border-color: var(--error); }
+.badge.cancelled { background: rgba(210, 153, 34, 0.3); border-color: var(--warn); }
+.badge.queued {
+    background: rgba(47, 129, 247, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.muted { color: var(--fg-muted); font-size: 13px; }
+
+.progress-bar {
+    height: 8px;
+    background: var(--panel-2);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 12px 0;
+}
+.progress-fill {
+    height: 100%;
+    background: var(--progress);
+    transition: width 0.3s;
+    border-radius: 4px;
+}
+
+.log {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    color: var(--fg-muted);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    max-height: 480px;
+    overflow-y: auto;
+}
+.gallery img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+}
+
+.viewer-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#view-viewer {
+    margin: 0;
+    padding: 0;
+    max-width: none;
+}
+
+#viewer-iframe {
+    width: 100%;
+    height: calc(100vh - 60px);
+    border: 0;
+    background: #000;
+}

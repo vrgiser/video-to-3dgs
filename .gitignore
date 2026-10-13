@@ -1,0 +1,49 @@
+# ─── OS junk ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ─── Python ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ─── Virtualenvs ──────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ─── IDE ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.iml
+.cursor/
+
+# ─── Secrets / local env ─────────────────────────────
+.env
+.env.local
+.envrc
+
+# ─── Claude Code (personal settings, NOT project code) ──
+.claude/
+
+# ─── Project-specific binaries ────────────────────────
+# opensplat is a 2.5MB arm64 macOS binary. Rebuild for your platform
+# and set OPEN_SPLAT_BIN. See README.md → "Configuration".
+/opensplat
+/opensplat-*
+
+# Don't accidentally re-introduce source maps in the viewer build
+/viewer/*.map

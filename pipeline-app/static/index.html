@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pipeline · 视频 → 3DGS</title>
+    <link rel="stylesheet" href="/static/app.css?v=20260926" />
+</head>
+<body>
+<script>console.log('[pipeline] html build 20260926');</script>
+    <header>
+        <h1>Pipeline</h1>
+        <nav id="main-tabs">
+            <a href="#/" data-tab="upload" class="tab-link">上传</a>
+            <a href="#/" data-tab="list" class="tab-link">作业列表</a>
+        </nav>
+    </header>
+
+    <main id="app">
+        <!-- View 1: upload -->
+        <section id="view-upload" class="view" hidden>
+            <div class="card">
+                <h2>新建作业</h2>
+                <form id="upload-form">
+                    <label class="dropzone" id="dropzone">
+                        <input type="file" id="file-input" accept="video/*" hidden />
+                        <span id="dropzone-text">点击或拖放视频到此处 (.mp4 / .mov / .webm)</span>
+                    </label>
+                    <div class="row">
+                        <label>
+                            FPS
+                            <input type="number" id="fps" value="3" min="1" max="30" />
+                        </label>
+                        <label>
+                            缩放倍数 <span class="muted">（1 = 原尺寸）</span>
+                            <input type="number" id="scale-factor" value="1" min="0.1" max="4" step="0.1" />
+                        </label>
+                        <label>
+                            OpenSplat 迭代
+                            <input type="number" id="iters" value="500" min="1" max="100000" />
+                        </label>
+                    </div>
+                    <div id="dims-info" class="muted" hidden></div>
+                    <button type="submit" id="submit-btn" disabled>上传并开始</button>
+                    <div id="upload-error" class="error" hidden></div>
+                </form>
+            </div>
+        </section>
+
+        <!-- View 2: jobs list -->
+        <section id="view-list" class="view" hidden>
+            <div class="card">
+                <h2>作业列表</h2>
+                <div class="row">
+                    <button id="refresh-list" class="secondary">刷新</button>
+                    <button id="cleanup-btn" class="secondary" style="color: var(--error); margin-left: auto;">清除全部已完成</button>
+                </div>
+                <table id="jobs-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>ID</th>
+                            <th>阶段</th>
+                            <th>进度</th>
+                            <th>参数</th>
+                            <th>消息</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobs-tbody">
+                        <tr><td colspan="7" class="empty">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- View 2: job detail -->
+        <section id="view-detail" class="view" hidden>
+            <div class="card">
+                <h2>作业 <span id="detail-id"></span></h2>
+                <div class="row">
+                    <span class="badge" id="detail-stage">pending</span>
+                    <span class="muted" id="detail-message"></span>
+                    <a href="#/" class="secondary">← 返回列表</a>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="detail-progress" style="width:0%"></div>
+                </div>
+                <div class="row">
+                    <button id="cancel-btn">取消作业</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>日志</h2>
+                <pre id="log-tail" class="log"></pre>
+            </div>
+
+            <div class="card" id="frames-card" hidden>
+                <h2>抽帧结果 <span class="muted" id="frames-count"></span></h2>
+                <div id="frames-gallery" class="gallery"></div>
+            </div>
+
+            <div class="card" id="splat-card" hidden>
+                <h2>3DGS 结果</h2>
+                <div class="row">
+                    <a id="open-viewer-link" class="secondary" href="#" target="_blank">在 SuperSplat 中打开 →</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- View 3: viewer (full-bleed iframe) -->
+        <section id="view-viewer" class="view" hidden>
+            <div class="viewer-header">
+                <a href="#/" class="secondary">← 返回</a>
+                <span class="muted" id="viewer-job-id"></span>
+                <a id="viewer-newtab" class="secondary" href="#" target="_blank">新标签打开 ↗</a>
+            </div>
+            <iframe id="viewer-iframe" src="about:blank"></iframe>
+        </section>
+
+        <!-- View 4: camera-track editor -->
+        <section id="view-track" class="view" hidden>
+            <div class="card">
+                <h2>相机轨迹 · <span id="track-job-id"></span></h2>
+                <div class="row">
+                    <a href="#/" class="secondary">← 返回列表</a>
+                    <span class="muted" id="track-status"></span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>1. 调整视角</h2>
+                <p class="muted">在下方 viewer 里用鼠标调整到你满意的视角。在 viewer 上拖动会自动打断回放。</p>
+                <div style="position:relative;">
+                    <iframe id="track-viewer" src="about:blank" style="width:100%;height:520px;border:1px solid var(--border);background:#000;"></iframe>
+                    <div class="viewer-status" id="track-viewer-status" style="position:absolute;top:6px;right:6px;padding:4px 10px;background:rgba(0,0,0,0.7);border:1px solid #444;border-radius:3px;font-size:11px;z-index:10;">viewer 状态：<span class="err">未加载</span></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>2. 关键帧</h2>
+                <div class="row">
+                    <button id="track-capture-btn" class="primary" disabled>📍 记录当前视角为关键帧</button>
+                    <button id="track-play-btn" disabled>▶ 回放</button>
+                    <button id="track-clear-btn">🗑 清空</button>
+                    <button id="track-save-btn" class="primary" disabled>💾 保存轨迹</button>
+                    <button id="track-delete-btn" class="secondary" style="color: var(--error);" hidden>删除已保存轨迹</button>
+                    <span class="muted" id="track-count-pill">0 个关键帧</span>
+                </div>
+                <table id="track-table">
+                    <thead><tr><th>#</th><th>position</th><th>target</th><th>fov</th><th></th></tr></thead>
+                    <tbody id="track-tbody">
+                        <tr><td colspan="5" class="muted" style="text-align: center;">（暂无）</td></tr>
+                    </tbody>
+                </table>
+                <p class="muted" style="font-size:11px;">每个关键帧间隔 5 秒；播放时自动循环。鼠标拖动 viewer 可随时打断回放。</p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/static/app.js?v=20260926"></script>
+</body>
+</html>

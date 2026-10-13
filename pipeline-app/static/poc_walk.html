@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>POC: 显示 walk 模式按钮</title>
+    <style>
+        body { margin: 0; background: #111; color: #eee; font: 13px/1.4 system-ui, sans-serif; }
+        header { padding: 10px 14px; background: #222; border-bottom: 1px solid #333; display: flex; gap: 14px; align-items: center; }
+        h1 { font-size: 14px; margin: 0; }
+        .log { background: #000; color: #0f0; padding: 6px 10px; font-family: ui-monospace, monospace; font-size: 12px; height: 180px; overflow: auto; }
+        .log .warn { color: #fa3; }
+        .log .err  { color: #f55; }
+        .log .ok   { color: #5f5; }
+        .row { display: flex; gap: 6px; }
+        button { padding: 5px 10px; background: #2a2a2a; color: #eee; border: 1px solid #444; border-radius: 3px; cursor: pointer; font-size: 12px; }
+        button:hover { background: #333; }
+        iframe { display: block; width: 100%; height: 70vh; border: 0; background: #000; }
+        .pad { padding: 10px 14px; }
+        .hint { color: #888; font-size: 11px; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>POC：解锁 walk 模式按钮</h1>
+    <div class="row">
+        <button id="b-unlock">1. 强制显示 fps 按钮</button>
+        <button id="b-click">2. 切到 walk（绕过 walkAllowed）</button>
+        <button id="b-orbit">3. 切回 orbit</button>
+        <button id="b-snap">查看 cameraState</button>
+    </div>
+    <span id="status" class="hint">等待 iframe 加载…</span>
+</header>
+
+<iframe id="v" src="about:blank"></iframe>
+
+<div class="pad">
+    <div class="hint">操作日志</div>
+    <div id="log" class="log"></div>
+</div>
+
+<script>
+const log = (msg, cls = '') => {
+    const el = document.getElementById('log');
+    const time = new Date().toISOString().slice(11, 19);
+    el.insertAdjacentHTML('beforeend', `<div class="${cls}">[${time}] ${msg}</div>`);
+    el.scrollTop = el.scrollHeight;
+};
+const status = (msg) => { document.getElementById('status').textContent = msg; };
+
+// 从 URL 拿 job_id，没传就拉列表第一个
+const params = new URLSearchParams(location.search);
+let jobId = params.get('job');
+async function resolveJob() {
+    if (jobId) return jobId;
+    const jobs = await fetch('/api/jobs').then(r => r.json());
+    if (!jobs.length) throw new Error('没有可用作业');
+    jobId = jobs[0].id;
+    return jobId;
+}
+
+const iframe = document.getElementById('v');
+const getWin = () => iframe.contentWindow;
+
+// 监听 viewer iframe 发来的 hello
+window.addEventListener('message', (ev) => {
+    const d = ev.data;
+    if (!d || ev.source !== iframe.contentWindow) return;
+    if (d.type === 'pipeline:hello') {
+        log(`viewer hello 收到 · getCameraState=${d.getCameraStateAvailable}`, 'ok');
+        status('viewer 就绪');
+    } else if (d.type === 'pipeline:cameraState') {
+        log(`cameraState: mode=${d.snapshot?.mode}, pos=${d.snapshot?.position?.map(v=>v.toFixed(2)).join(',')}, target=${d.snapshot?.target?.map(v=>v.toFixed(2)).join(',')}`);
+    } else if (d.type === 'pipeline:error') {
+        log(`viewer error: ${d.message}`, 'err');
+    }
+});
+
+document.getElementById('b-unlock').onclick = () => {
+    const w = getWin();
+    if (!w) return log('iframe 没加载完', 'warn');
+    const btn = w.document.getElementById('fpsCamera');
+    if (!btn) return log('viewer DOM 里找不到 fpsCamera', 'err');
+    // 直接去掉 hidden class
+    btn.classList.remove('hidden');
+    log('fpsCamera.classList → ' + btn.className, 'ok');
+    // 顺便把 flyCamera 从 right 改成 middle，避免按钮重叠
+    const fly = w.document.getElementById('flyCamera');
+    if (fly) { fly.classList.remove('right'); fly.classList.add('middle'); }
+    log('flyCamera 改 middle（避免与 fps 重叠）', 'ok');
+    status('已显示 fps 按钮 — 看工具条');
+};
+
+document.getElementById('b-click').onclick = () => {
+    const w = getWin();
+    if (!w?.getCameraState || !w?.setCameraState) return log('getCameraState/setCameraState 不可用', 'warn');
+    // 取当前快照，把 mode 改成 walk，再写回 — 走 restoreCameraState 路径
+    // 绕开 viewer 自己的 fpsCamera.click → toggleWalk → if (walkAllowed) 短路。
+    const cur = w.getCameraState();
+    w.setCameraState({ ...cur, mode: 'walk' });
+    log('已通过 setCameraState({mode:"walk"}) 切到 walk 模式', 'ok');
+    setTimeout(() => document.getElementById('b-snap').click(), 200);
+};
+
+document.getElementById('b-orbit').onclick = () => {
+    const w = getWin();
+    if (!w?.setCameraState) return log('setCameraState 不可用', 'warn');
+    const cur = w.getCameraState();
+    w.setCameraState({ ...cur, mode: 'orbit' });
+    log('已切回 orbit');
+    setTimeout(() => document.getElementById('b-snap').click(), 200);
+};
+
+document.getElementById('b-snap').onclick = () => {
+    const w = getWin();
+    if (!w?.getCameraState) return log('getCameraState 不可用 — viewer iframe 加 ?debug=1', 'warn');
+    const snap = w.getCameraState();
+    log(`getCameraState → mode=${snap.mode}, angles=[${snap.angles?.map(v=>v.toFixed(2)).join(',')}], distance=${snap.distance?.toFixed(2)}, fov=${snap.fov?.toFixed(1)}`);
+    // 也通过 bridge 拿 target（如果可用）
+    if (snap.target) log(`target=[${snap.target.map(v=>v.toFixed(2)).join(',')}]`);
+};
+
+(async () => {
+    try {
+        const j = await resolveJob();
+        iframe.src = `/viewer/${j}?debug=1`;
+        log(`加载 viewer/${j}?debug=1`);
+        status(`iframe src = /viewer/${j}?debug=1`);
+    } catch (e) {
+        log('启动失败：' + e.message, 'err');
+    }
+})();
+</script>
+</body>
+</html>
